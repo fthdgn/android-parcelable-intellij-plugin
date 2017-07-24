@@ -167,13 +167,13 @@ public class CodeGenerator {
         JavaCodeStyleManager styleManager = JavaCodeStyleManager.getInstance(mClass.getProject());
 
         // Shorten all class references
-        styleManager.shortenClassReferences(mClass.addBefore(describeContentsMethod, mClass.getLastChild()));
-        styleManager.shortenClassReferences(mClass.addBefore(writeToParcelMethod, mClass.getLastChild()));
-
         // Only adds if available
         if (defaultConstructor != null) {
             styleManager.shortenClassReferences(mClass.addBefore(defaultConstructor, mClass.getLastChild()));
         }
+
+        styleManager.shortenClassReferences(mClass.addBefore(describeContentsMethod, mClass.getLastChild()));
+        styleManager.shortenClassReferences(mClass.addBefore(writeToParcelMethod, mClass.getLastChild()));
 
         styleManager.shortenClassReferences(mClass.addBefore(constructor, mClass.getLastChild()));
         if (creatorField != null) {
@@ -209,6 +209,7 @@ public class CodeGenerator {
             }
         }
 
+        findAndRemoveDefaultConstructorMethod(psiClass);
         findAndRemoveMethod(psiClass, psiClass.getName(), TYPE_PARCEL);
         findAndRemoveMethod(psiClass, "describeContents");
         findAndRemoveMethod(psiClass, "writeToParcel", TYPE_PARCEL, "int");
@@ -247,6 +248,19 @@ public class CodeGenerator {
         }
     }
 
+    private static void findAndRemoveDefaultConstructorMethod(PsiClass clazz) {
+        PsiMethod[] methods = clazz.findMethodsByName(clazz.getName(), false);
+
+        for (PsiMethod method : methods) {
+            PsiParameterList parameterList = method.getParameterList();
+
+            if (parameterList.getParametersCount() == 0 && method.hasModifierProperty(PsiModifier.PUBLIC)) {
+                PsiCodeBlock methodBody = method.getBody();
+                if (methodBody != null && methodBody.getStatements().length == 0)
+                    method.delete();
+            }
+        }
+    }
 
     private static void findAndRemoveMethod(PsiClass clazz, String methodName, String... arguments) {
         // Maybe there's an easier way to do this with mClass.findMethodBySignature(), but I'm not an expert on Psi*
