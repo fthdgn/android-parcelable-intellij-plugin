@@ -160,7 +160,9 @@ public class CodeGenerator {
         // Constructor
         PsiMethod constructor = elementFactory.createMethodFromText(generateConstructor(mFields, mClass), mClass);
         // CREATOR
-        PsiField creatorField = elementFactory.createFieldFromText(generateStaticCreator(mClass), mClass);
+        PsiField creatorField = null;
+        if (!mClass.hasModifierProperty(PsiModifier.ABSTRACT))
+            creatorField = elementFactory.createFieldFromText(generateStaticCreator(mClass), mClass);
 
         JavaCodeStyleManager styleManager = JavaCodeStyleManager.getInstance(mClass.getProject());
 
@@ -174,7 +176,9 @@ public class CodeGenerator {
         }
 
         styleManager.shortenClassReferences(mClass.addBefore(constructor, mClass.getLastChild()));
-        styleManager.shortenClassReferences(mClass.addBefore(creatorField, mClass.getLastChild()));
+        if (creatorField != null) {
+            styleManager.shortenClassReferences(mClass.addBefore(creatorField, mClass.getLastChild()));
+        }
 
         makeClassImplementParcelable(elementFactory);
     }
